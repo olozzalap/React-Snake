@@ -11,28 +11,35 @@ class SnakeGame extends React.Component {
       boardX: 10,
       boardY: 10,
       snakeSquares: [
-        {x: 5, y: 5},
-        {x: 4, y: 5}
+        {x: 1, y: 9},
+        {x: 0, y: 9}
       ],
-      foodSquare: {x: 7, y: 4},
-      direction: "up"
+      foodSquare: {x: 8, y: 8},
+      direction: false,
+      gameSpeedMS: 1000
     }
+
+    this.handleChange = this.handleChange.bind(this);
   }
   componentDidMount() {
     this.startGame();
     document.addEventListener("keydown", (e) => {
       console.warn(e.keyCode);
       let newDirection = this.state.direction;
-      if (e.keyCode == '38' && this.state.direction !== "down") {
+      // W
+      if (e.keyCode == '87' && this.state.direction !== "down") {
         newDirection = "up";
       }
-      else if (e.keyCode == '40' && this.state.direction !== "up") {
+      // S
+      else if (e.keyCode == '83' && this.state.direction !== "up") {
         newDirection = "down";
       }
-      else if (e.keyCode == '37' && this.state.direction !== "right") {
+      // A
+      else if (e.keyCode == '65' && this.state.direction !== "right") {
         newDirection = "left";
       }
-      else if (e.keyCode == '39' && this.state.direction !== "left") {
+      // D
+      else if (e.keyCode == '68' && this.state.direction !== "left") {
         newDirection = "right";
       }
       this.setState({
@@ -44,13 +51,34 @@ class SnakeGame extends React.Component {
   }
 
   startGame() {
+    this.setState({
+      direction: false,
+      foodSquare: this.generateNewFoodSquare(),
+      snakeSquares: [
+        {x: 1, y: this.state.boardY - 1},
+        {x: 0, y: this.state.boardY - 1}
+      ],
+    }, () => {
+      console.warn(this.state);
+    })
+    clearInterval(gameTimer);
     gameTimer = setInterval(() => {
-      this.advanceSnake();
-    }, 1000)
+      if (this.state.direction) {
+        this.advanceSnake();
+      }
+    }, this.state.gameSpeedMS);
   }
   endGame() {
-    console.warn(gameTimer);
+    console.warn(`Game Over... Your snake got up to ${this.state.snakeSquares.length} squares`);
     clearInterval(gameTimer);
+    this.startGame();
+  }
+  handleChange(e) {
+    this.setState({
+      [e.target.name]: e.target.value
+    }, () => {
+      this.startGame();
+    })
   }
   parseBoard() {
     let board = [];
@@ -71,18 +99,33 @@ class SnakeGame extends React.Component {
     // console.warn(matchingSquare);
     if (matchingSquare) {
       return (
-        <div className="square filled" style={widthAndHeightPercents}>{x}, {y}</div>
+        <div className="square filled" style={widthAndHeightPercents}></div>
       )
     }
     else if (x === this.state.foodSquare.x && y === this.state.foodSquare.y) {
       return (
-        <div className="square food" style={widthAndHeightPercents}>{x}, {y}</div>
+        <div className="square food" style={widthAndHeightPercents}></div>
       )
     }
     else {
       return (
-        <div className="square" style={widthAndHeightPercents}>{x}, {y}</div>
+        <div className="square" style={widthAndHeightPercents}></div>
       )
+    }
+  }
+  generateNewFoodSquare() {
+    let newSquare = {
+      x: Math.floor((Math.random() * this.state.boardX)),
+      y: Math.floor((Math.random() * this.state.boardY))
+    }
+    let firstCollidingSquare = this.state.snakeSquares.find((square) => {
+      return square.x === newSquare.x && square.y === newSquare.y;
+    })
+    if (firstCollidingSquare) {
+      return this.generateNewFoodSquare();
+    }
+    else {
+      return newSquare
     }
   }
   advanceSnake() {
@@ -136,10 +179,7 @@ class SnakeGame extends React.Component {
         console.warn("gratz you got zee food");
         // TODO ensure new foodSquare isn't already a square occupied by the Snake
         this.setState({
-          foodSquare: {
-            x: Math.floor((Math.random() * this.state.boardX)),
-            y: Math.floor((Math.random() * this.state.boardY))
-          },
+          foodSquare: this.generateNewFoodSquare(),
           snakeSquares: newSnakeSquares
         })
       }
@@ -156,9 +196,25 @@ class SnakeGame extends React.Component {
 
   render() {
     return (
-      <div className="board">
-        {this.parseBoard()}
-      </div>
+      <main className="game-wrap">
+        <h1>Snake!</h1>
+        <p>Use W, A, S, D keys to move. Good luck my friend.</p>
+        <div className="board">
+          {this.parseBoard()}
+        </div>
+        <label>
+          # Columns:
+          <input type="number" value={this.state.boardX} name="boardX" onChange={this.handleChange}/>
+        </label>
+        <label>
+          # Rows:
+          <input type="number" value={this.state.boardY} name="boardY" onChange={this.handleChange}/>
+        </label>
+        <label>
+          Game Speed (ms):
+          <input type="number" value={this.state.gameSpeedMS} name="gameSpeedMS" onChange={this.handleChange}/>
+        </label>
+      </main>
     )
   };
 }
